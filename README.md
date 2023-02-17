@@ -23,7 +23,7 @@ test duration.
 * Please use the below command to process the results of PLT. Python version >3 is
 the minimal requirement for this script to work.
 
-*cmd: python3 autotest_processing.py <absolute patht to power_LoadTest directory>*
+*cmd: python3 autotest_processing.py [absolute path to power_LoadTest directory]*
 
 *Example: python3 autotest_processing.py /home/ssameeru/work/raptorlake/power_LoadTest/*
 

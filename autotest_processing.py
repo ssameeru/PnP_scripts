@@ -20,6 +20,8 @@ def write_seperator(fp):
     fp.write("=======================================\n")
 
 def get_sys_info(cb_log_fp, cros_log_fp, os_log_fp):
+    ''' Get the OS, CB and Browser version and updates it in the summary file.'''
+
     cros_buf = cros_log_fp.read()
     os_log_buf = os_log_fp.read()
     cb_buf = cb_log_fp.read()
@@ -66,6 +68,10 @@ def get_sys_info(cb_log_fp, cros_log_fp, os_log_fp):
         summary_fp.write("kernel Version:"+interim_list[1]+'\n')
 
 def get_cst_updated_residencies(cpu_file, key):
+    ''' Get the C-state residencies of each iteration for overall loop duration and
+    also for individual workload and caluclates the average of each-state residency
+    and updates it in the summary file.'''
+
     cst_acpi_residencies = {k:[] for k in ['C0', 'C1_ACPI', 'C2_ACPI', 'C3_ACPI', 'C4_ACPI']}
     cst_residencies = {k:[] for k in ['C0', 'C1E', 'C6', 'C8', 'C10']}
     csn_str = r"loop[0-9][0-9]_{0}_*_C[0-9].*".format(key)
@@ -123,6 +129,10 @@ def get_cst_updated_residencies(cpu_file, key):
     summary_fp.write('\n')
 
 def get_pkgc_updated_residencies(cpu_file, key):
+    ''' Get the PC-state residencies of each iteration for overall loop duration and
+    also for individual workload and caluclates the average of each-state residency
+    and updates it in the summary file.'''
+
     pkg_residencies = {k:[] for k in ['PC0', 'PC2', 'PC3', 'PC6', 'PC8', 'PC10']}
     pcn_str = r"loop[0-9][0-9]_{0}_C[0-9].*".format(key)
     match_pcn = re.compile(pcn_str)

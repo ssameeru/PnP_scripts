@@ -69,7 +69,7 @@ def get_sys_info(cb_log_fp, cros_log_fp, os_log_fp):
 
 def get_cst_updated_residencies(cpu_file, key):
     ''' Get the C-state residencies of each iteration for overall loop duration and
-    also for individual workload and caluclates the average of each-state residency
+    also for individual workload and calculates the average of each-state residency
     and updates it in the summary file.'''
 
     cst_acpi_residencies = {k:[] for k in ['C0', 'C1_ACPI', 'C2_ACPI', 'C3_ACPI', 'C4_ACPI']}
@@ -80,7 +80,7 @@ def get_cst_updated_residencies(cpu_file, key):
     buf = cpu_file.read()
     acpi = 0
 
-    if buf is '':
+    if buf == '':
         print("Results file is empty")
         exit(1)
 
@@ -130,7 +130,7 @@ def get_cst_updated_residencies(cpu_file, key):
 
 def get_pkgc_updated_residencies(cpu_file, key):
     ''' Get the PC-state residencies of each iteration for overall loop duration and
-    also for individual workload and caluclates the average of each-state residency
+    also for individual workload and calculates the average of each-state residency
     and updates it in the summary file.'''
 
     pkg_residencies = {k:[] for k in ['PC0', 'PC2', 'PC3', 'PC6', 'PC8', 'PC10']}
@@ -140,7 +140,7 @@ def get_pkgc_updated_residencies(cpu_file, key):
     cpu_file.seek(0)
     buf = cpu_file.read()
 
-    if buf is '':
+    if buf == '':
         print("Results file is empty")
         exit(1)
 
@@ -189,7 +189,7 @@ def get_power_avg(key_file):
 
     summary_fp.write(" Power \n")
     write_seperator(summary_fp)
-    summary_fp.write('Loop'+','+'Package_Power'+','+'System_power'+','+'Duration'+'Display_brightness'+'\n')
+    summary_fp.write('Loop'+','+'Package_Power'+','+'System_power'+','+'Duration'+','+'Display_brightness'+'\n')
     for i in range(len(sys_pwr_avg)):
         interim_sys_pwr = sys_pwr_avg[i].split("=")
         interim_sys_dur = duration_loop[i].split("=")

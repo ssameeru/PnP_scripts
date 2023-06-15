@@ -174,7 +174,12 @@ def get_power_avg(key_file):
     avg_pkg_pwr = 0
     total_dur_secs = 0
     match_pwr = "loop[0-9][0-9]_system_pwr_avg{perf}=[0-9].[0-9][0-9][0-9]"
-    match_dur = "loop[0-9][0-9]_psys_duration{perf}=[0-9][0-9][0-9]*.[0-9]"
+
+    if platform == 'adln':
+        match_dur = "loop[0-9][0-9]_system_duration{perf}=[0-9][0-9][0-9]*.[0-9]"
+    else:
+        match_dur = "loop[0-9][0-9]_psys_duration{perf}=[0-9][0-9][0-9]*.[0-9]"
+
     match_pkg = "loop[0-9][0-9]_package-0_pwr_avg{perf}=[0-9].[0-9][0-9][0-9]"
     match_disp = "loop[0-9][0-9]_level_backlight_percent{perf}=[0-9][0-9]*.[0-9]"
 
@@ -211,27 +216,38 @@ def check_for_file(file_path):
 
 def main():
     global summary_fp
+    global platform
 
-    if len(sys.argv) < 1:
-        print("Please provide the path to the Autotest Results Directory")
+    if len(sys.argv) < 3:
+        print()
+        print("usage: python3 autotest_processing.py <path_to_autotest_results> <platform:adln/adl>")
+        print()
+        print("Please provide the path to the Autotest Results Directory and platform")
+        print()
+        print("platform should be adln or adl, for rpl also please give adl as the platform")
+        print()
         exit()
-
+    #Base Directory path of results
     base_path = sys.argv[1]
+    platform = sys.argv[2]
 
+    print(platform)
+    #create Summary file for writing the data
     if os.path.exists(base_path+'summary.csv'):
         os.remove(base_path+'summary.csv')
 
     summary_fp = open(base_path+'summary.csv', 'a')
-
     cpu_summary_file = base_path+cpu_results_summary
     cpu_file_path = check_for_file(cpu_summary_file)
 
     if not os.path.exists(cpu_file_path):
-        print("cpu results file doesn't exist in the direcotry")
+        print("cpu results file doesn't exist in the directory")
         exit(1)
+
     if not os.path.exists(base_path+key_val_path):
-        print("keyval file doesn't exist in the direcotry")
+        print("keyval file doesn't exist in the directory")
         exit(1)
+
     if os.path.exists(base_path+cb_log) and os.path.exists(base_path+cros_system) and os.path.exists(base_path+'keyval'):
         cb_log_fp = open(base_path+cb_log, 'r')
         cros_system_log = open(base_path+cros_system, 'r')

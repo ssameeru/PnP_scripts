@@ -10,6 +10,8 @@ import glob
 import statistics as st
 from collections import defaultdict
 import time
+from datetime import datetime
+
 
 cpu_results_summary = 'results/cpu_results_*_summary.txt'
 key_val_path = 'results/keyval'
@@ -221,7 +223,7 @@ def main():
     if len(sys.argv) < 3:
         print()
         print("usage: python3 autotest_processing.py <path_to_autotest_results> <platform:adln/adl>")
-        print()
+        print("Eg : python3 autotest_processing.py /home/intel/autoPLT_jupiter_chrome_cpfe_results/default/power_LoadTest/ adl")
         print("Please provide the path to the Autotest Results Directory and platform")
         print()
         print("platform should be adln or adl, for rpl also please give adl as the platform")
@@ -233,10 +235,10 @@ def main():
 
     print(platform)
     #create Summary file for writing the data
-    if os.path.exists(base_path+'summary.csv'):
-        os.remove(base_path+'summary.csv')
+    if os.path.exists(base_path+'PLT-Autotest-Analysis-summary.csv'):
+        os.remove(base_path+'PLT-Autotest-Analysis-summary.csv')
 
-    summary_fp = open(base_path+'summary.csv', 'a')
+    summary_fp = open(base_path+'PLT-Autotest-Analysis-summary_' + str((time.localtime()).tm_mday) + '-' + str((time.localtime()).tm_mon) + '-' + str((time.localtime()).tm_hour) + '-' + str((time.localtime()).tm_min) + '.csv', 'a')
     cpu_summary_file = base_path+cpu_results_summary
     cpu_file_path = check_for_file(cpu_summary_file)
 

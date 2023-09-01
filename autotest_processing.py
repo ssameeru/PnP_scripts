@@ -6,6 +6,7 @@
 import re
 import sys
 import os
+import getopt
 import glob
 import statistics as st
 from collections import defaultdict
@@ -17,6 +18,8 @@ cpu_results_summary = 'results/cpu_results_*_summary.txt'
 key_val_path = 'results/keyval'
 cb_log = 'sysinfo/reboot_current/log'
 cros_system = 'sysinfo/reboot_current/crossystem'
+workload_list =['browsing', 'email', 'document', 'video']
+
 
 def write_seperator(fp):
     fp.write("=======================================\n")
@@ -68,6 +71,34 @@ def get_sys_info(cb_log_fp, cros_log_fp, os_log_fp):
     if kernel_version:
         interim_list = kernel_version[1].split('=')
         summary_fp.write("kernel Version:"+interim_list[1]+'\n')
+
+def get_gpu_idle_residencies(cpu_file):
+    gpuidle_residencies = {k:[] for k in  ['RC0', 'RC6']}
+    gpuidle_str = r"loop[0-9][0-9]_gpuidle_RC{0,6}.*"
+    match_gpu = re.compile(gpuidle_str)
+
+    cpu_file.seek(0)
+    buf = cpu_file.read()
+
+    if buf == ' ':
+        print("Results doesn't have the GPU RC0 and RC6 counter values")
+        exit(1)
+
+    gpu_list = match_gpu.findall(buf)
+
+    for i in range(len(gpu_list)):
+        interim_list = gpu_list[i].split('\t')
+        if 'RC0' in interim_list[0] and float(interim_list[3]) >= 3604:
+            gpuidle_residencies['RC0'].append(float(interim_list[1]))
+        if 'RC6' in interim_list[0] and float(interim_list[3]) >= 3604:
+            gpuidle_residencies['RC6'].append(float(interim_list[1]))
+
+    for k,v in gpuidle_residencies.items():
+            if not  v:
+                print("List is null, we don't have "+k+" c-state")
+                break
+            else:
+                summary_fp.write(k+','+str(round(st.mean(v), 2))+'\n')
 
 def get_cst_updated_residencies(cpu_file, key):
     ''' Get the C-state residencies of each iteration for overall loop duration and
@@ -174,8 +205,11 @@ def get_pkgc_updated_residencies(cpu_file, key):
 
 def get_power_avg(key_file):
     avg_pkg_pwr = 0
+    no_of_loops = 0
     total_dur_secs = 0
+    actual_battery_power = (float(battery_capacity) * .96)
     match_pwr = "loop[0-9][0-9]_system_pwr_avg{perf}=[0-9].[0-9][0-9][0-9]"
+
 
     if platform == 'adln':
         match_dur = "loop[0-9][0-9]_system_duration{perf}=[0-9][0-9][0-9]*.[0-9]"
@@ -192,7 +226,10 @@ def get_power_avg(key_file):
     duration_loop = re.findall(match_dur, buf)
     disp_brightness = re.findall(match_disp, buf)
 
-    no_of_loops = len(sys_pwr_avg)
+    for i in range(len(duration_loop)):
+        interim_duration = duration_loop[i].split("=")
+        if (float(interim_duration[1])) >= 3604.0:
+            no_of_loops += 1
 
     summary_fp.write(" Power \n")
     write_seperator(summary_fp)
@@ -206,7 +243,7 @@ def get_power_avg(key_file):
         total_dur_secs += (float(interim_sys_dur[1]))
         summary_fp.write(str(i)+','+str(interim_pkg_pwr[1])+','+str(interim_sys_pwr[1])+','+str(interim_sys_dur[1])+','+str(interim_disp[1])+'\n')
     write_seperator(summary_fp)
-    summary_fp.write('Average_power & Mins'+','+str(round(avg_pkg_pwr/no_of_loops, 2))+','+str(round(60.19/(total_dur_secs/3600), 2))+','+str(round(total_dur_secs/60, 2))+'\n')
+    summary_fp.write('Average_power & Mins'+','+str(round(avg_pkg_pwr/no_of_loops, 2))+','+str(round(actual_battery_power/(total_dur_secs/3600), 2))+','+str(round(total_dur_secs/60, 2))+'\n')
     write_seperator(summary_fp)
 
 
@@ -216,24 +253,47 @@ def check_for_file(file_path):
             return file_obj
     return 0
 
+def usage():
+
+    print("""usage: python3 autotest_processing.py
+    -p/--path: <path_to_autotest_results>
+    -a/--arch: <arch:adln/adl/rpl>
+    -b/--battery_capacity: <battery rated capacity in Watt Hr>""")
+    print()
+    sys.exit(2)
+
 def main():
+
     global summary_fp
     global platform
+    global battery_capacity
 
-    if len(sys.argv) < 3:
-        print()
-        print("usage: python3 autotest_processing.py <path_to_autotest_results> <platform:adln/adl>")
-        print("Eg : python3 autotest_processing.py /home/intel/autoPLT_jupiter_chrome_cpfe_results/default/power_LoadTest/ adl")
-        print("Please provide the path to the Autotest Results Directory and platform")
-        print()
-        print("platform should be adln or adl, for rpl also please give adl as the platform")
-        print()
-        exit()
-    #Base Directory path of results
-    base_path = sys.argv[1]
-    platform = sys.argv[2]
+    try:
+        opts,args = getopt.getopt(sys.argv[1:], "p:a:b:h", ["path=", "platform=", "battery_capacity=", "help"])
 
-    print(platform)
+    except getopt.GetoptError as err:
+        print(err)
+        print("exception")
+        usage()
+        sys.exit(2)
+
+    if opts:
+       for opt,arg in opts:
+           if opt in ['-h', '--help']:
+               usage()
+           elif opt in ['-p', '--path']:
+               base_path = arg
+           elif opt in ['-a', '--arch']:
+               platform = arg
+           elif opt in ['-b', '--battery_capacity']:
+               battery_capacity = arg
+           else:
+               print("else case")
+               usage()
+    else:
+        print("please pass the below arguments to the script")
+        usage()
+        sys.exit(2)
     #create Summary file for writing the data
     if os.path.exists(base_path+'PLT-Autotest-Analysis-summary.csv'):
         os.remove(base_path+'PLT-Autotest-Analysis-summary.csv')
@@ -272,17 +332,23 @@ def main():
     write_seperator(summary_fp)
     get_cst_updated_residencies(cpu_file, 'cpuidle')
     write_seperator(summary_fp)
+    summary_fp.write(" GPU Residencies\n")
+    write_seperator(summary_fp)
+    get_gpu_idle_residencies(cpu_file)
+    write_seperator(summary_fp)
     summary_fp.write("Individual KPI CPU-PKG and CPU-Idle Residenices\n")
     write_seperator(summary_fp)
-    get_pkgc_updated_residencies(cpu_file, 'browsing_cpupkg')
-    get_pkgc_updated_residencies(cpu_file, 'email_cpupkg')
-    get_pkgc_updated_residencies(cpu_file, 'document_cpupkg')
-    get_pkgc_updated_residencies(cpu_file, 'video_cpupkg')
-    get_cst_updated_residencies(cpu_file, 'browsing_cpuidle')
-    get_cst_updated_residencies(cpu_file, 'email_cpuidle')
-    get_cst_updated_residencies(cpu_file, 'document_cpuidle')
-    get_cst_updated_residencies(cpu_file, 'video_cpuidle')
-    print("Summary File is generated with results")
+
+    for i in workload_list:
+        key_word = "{0}_cpupkg".format(i)
+        get_pkgc_updated_residencies(cpu_file, key_word)
+
+    for i in workload_list:
+        key_word = "{0}_cpuidle".format(i)
+        get_cst_updated_residencies(cpu_file, key_word)
+
+
+    print("Summary File is generated with results in the specified path:", base_path)
 
     cpu_file.close()
     keyval_file.close()

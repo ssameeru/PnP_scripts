@@ -7,12 +7,17 @@ class FileProcessor():
         return self.read_from_file(fd)
 
     def check_dir_perm(self, path):
-        if os.access(path, os.R_OK ):
+        if os.access(path, os.R_OK):
             print("Have Read permissions for the directory:", path)
         else:
-            print("Permission for the server path is denied")
+            print("Read Permission for the server path is denied:", path)
             exit(1)
-
+        if os.access(path, os.W_OK):
+            print("Have Write permissions for the directory:", path)
+        else:
+            print("Write Permission for the server path is denied:", path)
+            exit(1)
+            
     def convert_expr_to_path(self, file_path):
         paths = []
 

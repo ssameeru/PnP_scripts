@@ -1,5 +1,8 @@
 import os
 import glob
+import errno
+import time
+from shutil import move
 
 kpi_path = {}
 
@@ -22,31 +25,52 @@ class Renamer():
                     
                 elif name == 'S0iX':
                     kpi_path['S0iX'] = os.path.join(path, name)
+
+                elif name == 'PG3':
+                    kpi_path['PG3'] = os.path.join(path, name)
                     
                 else:
                     print(name," is Not a directory")
+        return kpi_path
 
-    def check_for_summary_file(self, path):
-        if os.path.exists(path+'/summary.csv') or os.path.exists(path+'/Summary.csv'):
-            return 1
+    def check_for_summary_file(self, path, pfm):
+        if pfm == 'Windows':
+            if os.path.exists(path+'\summary.csv') or os.path.exists(path+'\Summary.csv'):
+                return 1
+            else:
+                return 0
         else:
-            return 0
-    
-    def rename_summary_file(self, path, pref, kpi, run):
+            if os.path.exists(path+'/summary.csv') or os.path.exists(path+'/Summary.csv'):
+                return 1
+            else:
+                return 0
+            
+    def rename_summary_file(self, path, pfm, pref, kpi, run):
 
         new_name = pref+'_{}_R{}_Power.csv'.format(kpi, run)
 
-        ret = self.check_for_summary_file(path)
+        ret = self.check_for_summary_file(path, pfm)
 
         if ret:
-            summary_path = path+'/summary.csv' if os.path.exists(path+'/summary.csv') else path+'/Summary.csv'
-            os.rename(summary_path, path+'/'+new_name)
+            if pfm == 'Windows':
+                summary_path = path+'\\Summary.csv' if os.path.exists(path+'\\Summary.csv') else (path+'\\summary.csv')
+                try:
+                    move(summary_path, path+'\\'+new_name)
+                    time.sleep(0.5)
+                except OSError as e:
+                    if e.errno == errno.EACCES and os.path.exists(path+'\\'+new_name):
+                        print("Got access Error Don't have permission to delete the summary file, But Renmaing file is done")
+            else:
+                print(pfm)
+                summary_path = path+'/summary.csv' if os.path.exists(path+'/summary.csv') else (path+'/Summary.csv')
+                os.rename(summary_path, path+'/'+new_name)
+                
         else:
             print("Files are already renamed in:"+path+" Directory ")
 
         
                 
-    def rename_each_file(self, prefix):
+    def rename_each_file(self, prefix, pfm):
         temp_path = ' '
         run_num = 1
         def get_creation_time(item):
@@ -62,7 +86,7 @@ class Renamer():
                 sorted_items = sorted(items, key=get_creation_time)
                 for i in sorted_items:
                     summary_path = os.path.join(path, i)
-                    self.rename_summary_file(summary_path, prefix, kpi, run_num)
+                    self.rename_summary_file(summary_path, pfm, prefix, kpi, run_num)
                     run_num += 1
                 
                     

@@ -2,13 +2,17 @@ import sys
 import platform
 import ConfigReader as cr
 import FileProcessor as fr
+import CsvMod as cm
 import Renamer as rn
+import os
+import getpass
 
 #create instances for the classes
 
 fp = fr.FileProcessor()
 rp = rn.Renamer()
 config = cr.ConfigReader()
+cbi = cm.CsvMod()
 
 def get_host_platform():
     return platform.system()
@@ -32,7 +36,8 @@ def main():
     #Path for config file
     base_path = sys.argv[1]
     pfm = get_host_platform()
-    if pfm == 'windows':
+    
+    if pfm == 'Windows':
         config_glob = base_path+'\*.txt'
     else:
         config_glob = base_path+'/*.txt'
@@ -52,8 +57,12 @@ def main():
     sanit_dest = sanitizer(dest)
     
     #Run get_path before renaming the file
-    rp.get_path_for_each_kpi(base_path)
-    rp.rename_each_file(sanit_prefix)
+    kpi_path = rp.get_path_for_each_kpi(base_path)
+    cbi.adapt_cpd_mes_to_bi(kpi_path, pfm)
+    #rp.rename_each_file(sanit_prefix, pfm)
 
+    #change the Summary files to Bi format
+    #cbi.adapt_cpd_mes_to_bi(kpi_path, sanit_prefix)
+    
 if __name__ == "__main__":
     main()

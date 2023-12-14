@@ -7,12 +7,12 @@ class ConfigReader():
     def __init__(self) :
         self.prefix = ' '
         self.dest = ' '
-                    
+
     def get_suffix(self, path):
 
         fp = fr.FileProcessor()
         print(path)
-        
+
         if (os.path.exists(path)):
             config_file_d = fp.open_file(path)
 
@@ -28,5 +28,5 @@ class ConfigReader():
                 self.dest = temp[1]
             else:
                 print("config file doesn't have prefix/ destination specified in present line")
-    
+
         return self.prefix, self.dest
